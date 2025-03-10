@@ -14,7 +14,7 @@ def load_features_labels(feature_file):
 
 # Train SVM classifier with GridSearch
 def train_svm(features, labels):
-    param_grid = {'C': [0.1], 'gamma': [1], 'kernel': ['linear']}
+    param_grid = {'C': [0.1, 1, 10], 'gamma': [1, 0.001, 0.01, 0.1], 'kernel': ['linear', 'rbf']}
     svm = SVC(probability=True)
     grid = GridSearchCV(svm, param_grid, refit=True, verbose=2)
     grid.fit(features, labels)
