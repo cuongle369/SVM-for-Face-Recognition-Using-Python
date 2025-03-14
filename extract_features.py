@@ -5,6 +5,7 @@ from skimage.feature import hog
 import pickle
 import argparse
 import matplotlib.pyplot as plt
+from data_augmentation import extract_features_with_augmentation
 
 
 def extract_hog_features(image, visualize=True):
@@ -61,13 +62,13 @@ def main():
     parser.add_argument("--base_dir", default="face_data", help="Base directory containing person subdirectories")
     parser.add_argument("--output_file", default="features.pickle", help="Output file to save features and labels")
     parser.add_argument("--vis_dir", default="visualizations", help="Directory to save visualizations")
+    parser.add_argument("--use_augmentation", action="store_true", help="Apply data augmentation")
     args = parser.parse_args()
 
     # Create visualization directory if it does not exist
     os.makedirs(args.vis_dir, exist_ok=True)
 
-    features = []
-    labels = []
+    features_and_labels = []
 
     for person in os.listdir(args.base_dir):
         person_dir = os.path.join(args.base_dir, person)
@@ -79,28 +80,41 @@ def main():
             for image_file in os.listdir(person_dir):
                 if image_file.endswith(".jpg"):
                     image_path = os.path.join(person_dir, image_file)
-                    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
-                    if image is not None:
-                        # Extract HOG features with visualization enabled
-                        feat, hog_image = extract_hog_features(image, visualize=True)
+                    if args.use_augmentation:
+                        # Extract features with augmentation
+                        augmented_features_labels = extract_features_with_augmentation(
+                            image_path, person, person_vis_dir, visualize=True)
+                        features_and_labels.extend(augmented_features_labels)
+                        print(
+                            f"Processed with augmentation: {image_file} (generated {len(augmented_features_labels)} samples)")
+                    else:
+                        # Original method without augmentation
+                        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+                        if image is not None:
+                            # Extract HOG features with visualization enabled
+                            feat, hog_image = extract_hog_features(image, visualize=True)
 
-                        # Store features and labels
-                        features.append(feat)
-                        labels.append(person)
+                            # Store features and labels
+                            features_and_labels.append((feat, person))
 
-                        # Save the visualization image
-                        vis_filename = os.path.splitext(image_file)[0] + "_hog.png"
-                        vis_path = os.path.join(person_vis_dir, vis_filename)
-                        save_visualization(image, hog_image, vis_path)
+                            # Save the visualization image
+                            vis_filename = os.path.splitext(image_file)[0] + "_hog.png"
+                            vis_path = os.path.join(person_vis_dir, vis_filename)
+                            save_visualization(image, hog_image, vis_path)
 
-                        print(f"Processed and visualized: {image_file}")
+                            print(f"Processed and visualized: {image_file}")
+
+    # Unpack features and labels from the list of tuples
+    features = [item[0] for item in features_and_labels]
+    labels = [item[1] for item in features_and_labels]
 
     # Save features and labels to a pickle file
     with open(args.output_file, 'wb') as f:
         pickle.dump((features, labels), f)
 
     print(f"Features extracted and saved to {args.output_file}")
+    print(f"Total samples after processing: {len(features)}")
     print(f"Visualizations saved to {args.vis_dir}")
 
 
