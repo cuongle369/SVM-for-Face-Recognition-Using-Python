@@ -9,15 +9,15 @@ import matplotlib.pyplot as plt
 
 def extract_hog_features(image, visualize=True):
     """
-    Trích xuất đặc trưng HOG từ ảnh và tùy chọn trả về hình ảnh trực quan hóa
+    Extract HOG features from an image and optionally return the visualization image.
 
     Parameters:
-    - image: ảnh đầu vào
-    - visualize: nếu True, trả về cả đặc trưng và ảnh trực quan hóa
+    - image: input image
+    - visualize: if True, returns both the feature vector and the visualization image
 
     Returns:
-    - features: vector đặc trưng HOG
-    - hog_image: ảnh trực quan hóa HOG (nếu visualize=True)
+    - features: HOG feature vector
+    - hog_image: HOG visualization image (if visualize=True)
     """
     if visualize:
         features, hog_image = hog(image, pixels_per_cell=(8, 8),
@@ -31,22 +31,22 @@ def extract_hog_features(image, visualize=True):
 
 def save_visualization(original_image, hog_image, output_path):
     """
-    Lưu ảnh gốc và ảnh trực quan hóa HOG cạnh nhau
+    Save the original image and its HOG visualization side by side.
 
     Parameters:
-    - original_image: ảnh gốc
-    - hog_image: ảnh trực quan hóa HOG
-    - output_path: đường dẫn để lưu ảnh kết quả
+    - original_image: the original image
+    - hog_image: the HOG visualization image
+    - output_path: path to save the output image
     """
-    # Tạo figure với 2 subplots
+    # Create a figure with 2 subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
-    # Hiển thị ảnh gốc
+    # Display the original image
     ax1.imshow(original_image, cmap='gray')
     ax1.set_title('Original Image')
     ax1.axis('off')
 
-    # Hiển thị ảnh HOG
+    # Display the HOG visualization image
     ax2.imshow(hog_image, cmap='gray')
     ax2.set_title('HOG Features')
     ax2.axis('off')
@@ -63,7 +63,7 @@ def main():
     parser.add_argument("--vis_dir", default="visualizations", help="Directory to save visualizations")
     args = parser.parse_args()
 
-    # Tạo thư mục trực quan hóa nếu chưa tồn tại
+    # Create visualization directory if it does not exist
     os.makedirs(args.vis_dir, exist_ok=True)
 
     features = []
@@ -72,7 +72,7 @@ def main():
     for person in os.listdir(args.base_dir):
         person_dir = os.path.join(args.base_dir, person)
         if os.path.isdir(person_dir):
-            # Tạo thư mục trực quan hóa cho từng người
+            # Create a visualization directory for each person
             person_vis_dir = os.path.join(args.vis_dir, person)
             os.makedirs(person_vis_dir, exist_ok=True)
 
@@ -82,21 +82,21 @@ def main():
                     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
                     if image is not None:
-                        # Trích xuất đặc trưng HOG với visualize=True
+                        # Extract HOG features with visualization enabled
                         feat, hog_image = extract_hog_features(image, visualize=True)
 
-                        # Lưu đặc trưng và nhãn
+                        # Store features and labels
                         features.append(feat)
                         labels.append(person)
 
-                        # Lưu ảnh trực quan hóa
+                        # Save the visualization image
                         vis_filename = os.path.splitext(image_file)[0] + "_hog.png"
                         vis_path = os.path.join(person_vis_dir, vis_filename)
                         save_visualization(image, hog_image, vis_path)
 
                         print(f"Processed and visualized: {image_file}")
 
-    # Lưu đặc trưng và nhãn vào file pickle
+    # Save features and labels to a pickle file
     with open(args.output_file, 'wb') as f:
         pickle.dump((features, labels), f)
 
