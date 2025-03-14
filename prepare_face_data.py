@@ -3,21 +3,21 @@ import os
 import argparse
 import shutil
 
-# Khởi tạo bộ phân loại Haar Cascade để phát hiện khuôn mặt
+# Initialize Haar Cascade classifier for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
-# Hàm trích xuất khung hình từ video
+# Function to extract frames from a video
 def extract_frames(video_path, output_dir, interval=1):
     """
-    Trích xuất khung hình từ video và lưu vào thư mục đầu ra.
-    - video_path: Đường dẫn đến file video
-    - output_dir: Thư mục lưu khung hình
-    - interval: Khoảng cách giữa các khung được trích xuất
+    Extract frames from a video and save them to the output directory.
+    - video_path: Path to the video file
+    - output_dir: Directory to save extracted frames
+    - interval: Interval between extracted frames
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        print(f"Không thể mở video: {video_path}")
+        print(f"Cannot open video: {video_path}")
         return 0
 
     frame_count = 0
@@ -36,23 +36,23 @@ def extract_frames(video_path, output_dir, interval=1):
         frame_count += 1
 
     cap.release()
-    print(f"Đã trích xuất {saved_count} khung hình từ {video_path}")
+    print(f"Extracted {saved_count} frames from {video_path}")
     return saved_count
 
 
-# Hàm phát hiện và cắt khuôn mặt
-def detect_and_crop_faces(image_path, output_dir, person_name, face_counter, min_face_size=(50, 50)):
+# Function to detect and crop faces
+def detect_and_crop_faces(image_path, output_dir, person_name, face_counter, min_face_size=(100, 100)):
     """
-    Phát hiện khuôn mặt từ ảnh, cắt và tiền xử lý, sau đó lưu lại.
-    - image_path: Đường dẫn đến ảnh
-    - output_dir: Thư mục lưu khuôn mặt
-    - person_name: Tên người để đặt tên file
-    - face_counter: Bộ đếm khuôn mặt toàn cục
-    - min_face_size: Kích thước tối thiểu của khuôn mặt
+    Detect faces in an image, crop, preprocess, and save them.
+    - image_path: Path to the image
+    - output_dir: Directory to save detected faces
+    - person_name: Person's name for naming files
+    - face_counter: Global face counter
+    - min_face_size: Minimum face size
     """
     image = cv2.imread(image_path)
     if image is None:
-        print(f"Không thể đọc ảnh: {image_path}")
+        print(f"Cannot read image: {image_path}")
         return 0, face_counter
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -73,77 +73,77 @@ def detect_and_crop_faces(image_path, output_dir, person_name, face_counter, min
     return face_count, face_counter
 
 
-# Hàm xử lý toàn bộ dữ liệu cho một người
+# Function to process all data for a person
 def process_person(person_name, video_dir, output_base_dir, interval=1):
     """
-    Xử lý dữ liệu cho một người: trích xuất khung hình và phát hiện khuôn mặt.
-    - person_name: Tên người
-    - video_dir: Thư mục chứa video
-    - output_base_dir: Thư mục chính để lưu dữ liệu
-    - interval: Khoảng cách trích xuất khung
+    Process data for a person: extract frames and detect faces.
+    - person_name: Name of the person
+    - video_dir: Directory containing videos
+    - output_base_dir: Main directory to store processed data
+    - interval: Frame extraction interval
     """
     person_dir = os.path.join(output_base_dir, person_name)
     temp_dir = os.path.join(person_dir, "temp_frames")
 
-    # Tạo thư mục nếu chưa tồn tại
+    # Create directories if they do not exist
     os.makedirs(person_dir, exist_ok=True)
     os.makedirs(temp_dir, exist_ok=True)
 
-    # Tìm tất cả video trong thư mục
+    # Find all videos in the directory
     video_files = [f for f in os.listdir(video_dir) if f.endswith(('.mp4', '.avi'))]
     if not video_files:
-        print(f"Không tìm thấy video nào trong {video_dir}")
+        print(f"No videos found in {video_dir}")
         return
 
     total_frames = 0
     total_faces = 0
-    face_counter = 0  # Bộ đếm khuôn mặt toàn cục
+    face_counter = 0  # Global face counter
 
-    # Trích xuất khung hình từ mỗi video
+    # Extract frames from each video
     for video_file in video_files:
         video_path = os.path.join(video_dir, video_file)
         frames_extracted = extract_frames(video_path, temp_dir, interval)
         total_frames += frames_extracted
 
-    # Phát hiện và xử lý khuôn mặt từ các khung hình
+    # Detect and process faces from extracted frames
     frame_files = [f for f in os.listdir(temp_dir) if f.startswith('frame_')]
     for frame_file in frame_files:
         frame_path = os.path.join(temp_dir, frame_file)
         faces_detected, face_counter = detect_and_crop_faces(frame_path, person_dir, person_name, face_counter)
         total_faces += faces_detected
-        os.remove(frame_path)  # Xóa khung hình sau khi xử lý
+        os.remove(frame_path)  # Remove frame after processing
 
-    # Xóa thư mục tạm
+    # Remove temporary directory
     shutil.rmtree(temp_dir)
-    print(f"Hoàn tất xử lý cho {person_name}: {total_frames} khung hình, {total_faces} khuôn mặt")
+    print(f"Processing complete for {person_name}: {total_frames} frames, {total_faces} faces")
 
 
-# Hàm chính
+# Main function
 def main():
-    # Thiết lập đối số dòng lệnh
-    parser = argparse.ArgumentParser(description="Thu thập và chuẩn bị dữ liệu khuôn mặt từ video.")
-    parser.add_argument("--input_dir", default="input_videos", help="Thư mục chứa video đầu vào")
-    parser.add_argument("--output_dir", default="face_data", help="Thư mục lưu dữ liệu đã xử lý")
-    parser.add_argument("--interval", type=int, default=5, help="Khoảng cách trích xuất khung hình")
+    # Set up command-line arguments
+    parser = argparse.ArgumentParser(description="Collect and prepare face data from videos.")
+    parser.add_argument("--input_dir", default="input_videos", help="Directory containing input videos")
+    parser.add_argument("--output_dir", default="face_data", help="Directory to save processed data")
+    parser.add_argument("--interval", type=int, default=5, help="Frame extraction interval")
     args = parser.parse_args()
 
-    # Danh sách 4 người trong nhóm
+    # List of 4 people in the group
     people = ["Cuong", "Ly", "MinhSon", "PhienLuu"]
 
-    # Tạo thư mục đầu ra nếu chưa tồn tại
+    # Create output directory if it does not exist
     os.makedirs(args.output_dir, exist_ok=True)
 
-    print("Bắt đầu xử lý dữ liệu...")
+    print("Starting data processing...")
 
-    # Xử lý từng người
+    # Process each person
     for person in people:
         video_dir = os.path.join(args.input_dir, person)
         if not os.path.exists(video_dir):
-            print(f"Thư mục {video_dir} không tồn tại, bỏ qua {person}")
+            print(f"Directory {video_dir} does not exist, skipping {person}")
             continue
         process_person(person, video_dir, args.output_dir, args.interval)
 
-    print("Quá trình thu thập và chuẩn bị dữ liệu hoàn tất!")
+    print("Data collection and preparation process complete!")
 
 
 if __name__ == "__main__":
