@@ -1,0 +1,14 @@
+Accuracy: 0.98
+              precision    recall  f1-score   support
+
+       Cuong       0.97      1.00      0.98       205
+          Ly       0.99      0.97      0.98       282
+     MinhSon       1.00      0.98      0.99        88
+    PhienLuu       0.94      0.97      0.95       109
+
+    accuracy                           0.98       684
+   macro avg       0.98      0.98      0.98       684
+weighted avg       0.98      0.98      0.98       684
+
+Best Parameters:
+{'C': 0.1, 'gamma': 1, 'kernel': 'linear'}
